@@ -33,9 +33,30 @@ final class Html
 
     public static function appUrl(string $path): string
     {
-        $base = '/' . trim(Env::string('APP_BASE_PATH', ''), '/');
+        $configuredBase = Env::string('APP_BASE_PATH', '');
+        $base = $configuredBase !== '' ? $configuredBase : self::detectBasePath();
+        $base = '/' . trim($base, '/');
         $base = $base === '/' ? '' : $base;
         return $base . '/' . ltrim($path, '/');
+    }
+
+    private static function detectBasePath(): string
+    {
+        $scriptName = (string) ($_SERVER['SCRIPT_NAME'] ?? '');
+        if ($scriptName === '') {
+            return '';
+        }
+
+        $dir = str_replace('\\', '/', dirname($scriptName));
+        if ($dir === '/' || $dir === '.') {
+            return '';
+        }
+
+        if (str_ends_with($dir, '/public')) {
+            $dir = substr($dir, 0, -7);
+        }
+
+        return $dir === '/' ? '' : $dir;
     }
 
     public static function statusBadge(?string $status): string

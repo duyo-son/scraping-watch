@@ -9,7 +9,13 @@ require dirname(__DIR__) . '/bootstrap.php';
 $token = Env::nullableString('SCRAPE_TOKEN');
 $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
 $host = $_SERVER['HTTP_HOST'] ?? Env::string('APP_HOST', '');
-$basePath = '/' . trim(Env::string('APP_BASE_PATH', ''), '/');
+$configuredBasePath = Env::string('APP_BASE_PATH', '');
+$scriptDir = str_replace('\\', '/', dirname((string) ($_SERVER['SCRIPT_NAME'] ?? '')));
+if (str_ends_with($scriptDir, '/public')) {
+    $scriptDir = substr($scriptDir, 0, -7);
+}
+$detectedBasePath = ($scriptDir === '/' || $scriptDir === '.') ? '' : $scriptDir;
+$basePath = '/' . trim($configuredBasePath !== '' ? $configuredBasePath : $detectedBasePath, '/');
 $basePath = $basePath === '/' ? '' : $basePath;
 
 if ($host === '') {
