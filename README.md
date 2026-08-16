@@ -117,6 +117,12 @@ dist/watch/
 ├─ storage/
 ├─ .htaccess      <- /watch/ 요청을 public/으로 연결
 ├─ index.php      <- /watch/ fallback entrypoint
+├─ assets.css     <- rewrite가 꺼져 있어도 CSS가 로드되게 하는 fallback
+├─ watches.php    <- rewrite fallback
+├─ runs.php       <- rewrite fallback
+├─ run.php        <- rewrite fallback
+├─ failures.php   <- rewrite fallback
+├─ scrape.php     <- rewrite fallback
 ├─ bootstrap.php
 ├─ composer.json
 └─ .env.example

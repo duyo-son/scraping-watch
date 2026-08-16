@@ -28,6 +28,13 @@ for path in \
   templates \
   .htaccess \
   index.php \
+  assets.css \
+  watches.php \
+  runs.php \
+  run.php \
+  failures.php \
+  scrape.php \
+  cron_scrape.php \
   bootstrap.php \
   composer.json \
   .env.example \
