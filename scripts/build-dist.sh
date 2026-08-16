@@ -85,6 +85,11 @@ elif ! install_vendor_from_local_composer; then
   install_vendor_from_docker_image
 fi
 
+if [[ ! -f "${DIST_DIR}/vendor/autoload.php" ]]; then
+  echo "vendor/autoload.php was not created. Install Composer dependencies before deploying." >&2
+  exit 1
+fi
+
 echo "==> Removing development-only files from dist"
 find "${DIST_DIR}" -name ".DS_Store" -delete
 rm -rf \
@@ -109,7 +114,12 @@ Deployment directory:
 Upload archive:
   ${ARCHIVE}
 
-Lolipop public folder should point to:
-  watch/public
+Upload everything inside this directory, including:
+  vendor/
+  public/
+  .env.example
+
+For https://YOUR_DOMAIN/watch/ deployment:
+  upload dist/watch/* to the server's web/watch/ directory
 
 EOF

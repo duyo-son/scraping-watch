@@ -78,6 +78,8 @@ dist/watch/                 <- 업로드할 폴더
 dist/watch-lolipop.tar.gz   <- 압축 업로드용 파일
 ```
 
+중요: GitHub에서 받은 소스만 서버에 올리면 `vendor/`가 없어서 실행되지 않습니다. 반드시 `./scripts/build-dist.sh`로 만든 `dist/watch/` 전체를 올리거나, 서버에서 `composer install --no-dev --optimize-autoloader`를 실행해야 합니다.
+
 스크립트는 `public/`, `src/`, `config/`, `vendor/`, `.htaccess`, 루트 `index.php`, `bootstrap.php`, `composer.json`, `.env.example`, 빈 `storage/` 구조를 `dist/watch/`에 배치합니다. `storage/database.sqlite`, 로그, lock 파일, tests, Docker 파일은 배포물에 포함하지 않습니다.
 
 로컬에 Composer가 있으면 `dist/watch/vendor`를 production dependency로 설치합니다. Composer가 없으면 Docker 이미지에서 `vendor/`와 `composer.lock`을 추출합니다.
