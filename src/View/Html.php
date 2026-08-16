@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace WatchScraper\View;
 
+use WatchScraper\Support\Env;
+
 final class Html
 {
     public static function e(mixed $value): string
@@ -21,12 +23,19 @@ final class Html
             '/scrape.php' => '수동 실행',
         ];
         echo '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">';
-        echo '<title>' . self::e($title) . '</title><link rel="stylesheet" href="/assets.css"></head><body>';
+        echo '<title>' . self::e($title) . '</title><link rel="stylesheet" href="' . self::e(self::appUrl('/assets.css')) . '"></head><body>';
         echo '<header><h1>Vacheron 재고 감시</h1><nav>';
         foreach ($nav as $href => $label) {
-            echo '<a href="' . self::e($href) . '">' . self::e($label) . '</a>';
+            echo '<a href="' . self::e(self::appUrl($href)) . '">' . self::e($label) . '</a>';
         }
         echo '</nav></header><main>' . $content . '</main></body></html>';
+    }
+
+    public static function appUrl(string $path): string
+    {
+        $base = '/' . trim(Env::string('APP_BASE_PATH', ''), '/');
+        $base = $base === '/' ? '' : $base;
+        return $base . '/' . ltrim($path, '/');
     }
 
     public static function statusBadge(?string $status): string

@@ -78,7 +78,7 @@ dist/watch/                 <- 업로드할 폴더
 dist/watch-lolipop.tar.gz   <- 압축 업로드용 파일
 ```
 
-스크립트는 `public/`, `src/`, `config/`, `vendor/`, `bootstrap.php`, `composer.json`, `.env.example`, 빈 `storage/` 구조를 `dist/watch/`에 배치합니다. `storage/database.sqlite`, 로그, lock 파일, tests, Docker 파일은 배포물에 포함하지 않습니다.
+스크립트는 `public/`, `src/`, `config/`, `vendor/`, `.htaccess`, 루트 `index.php`, `bootstrap.php`, `composer.json`, `.env.example`, 빈 `storage/` 구조를 `dist/watch/`에 배치합니다. `storage/database.sqlite`, 로그, lock 파일, tests, Docker 파일은 배포물에 포함하지 않습니다.
 
 로컬에 Composer가 있으면 `dist/watch/vendor`를 production dependency로 설치합니다. Composer가 없으면 Docker 이미지에서 `vendor/`와 `composer.lock`을 추출합니다.
 
@@ -88,6 +88,7 @@ dist/watch-lolipop.tar.gz   <- 압축 업로드용 파일
 APP_ENV=production
 APP_TIMEZONE=Asia/Tokyo
 APP_HOST=YOUR_DOMAIN
+APP_BASE_PATH=/watch
 DEBUG_MODE=false
 DB_PATH=/home/users/X/lolipop.jp-ACCOUNT/web/watch/storage/database.sqlite
 SCRAPE_TOKEN=긴_랜덤_문자열
@@ -114,6 +115,8 @@ dist/watch/
 ├─ config/
 ├─ vendor/
 ├─ storage/
+├─ .htaccess      <- /watch/ 요청을 public/으로 연결
+├─ index.php      <- /watch/ fallback entrypoint
 ├─ bootstrap.php
 ├─ composer.json
 └─ .env.example
@@ -121,7 +124,9 @@ dist/watch/
 
 Lolipop에는 `dist/watch/` 안의 파일들을 서버의 `web/watch/`로 업로드합니다. 서버에 업로드한 뒤 `.env.example`을 복사해서 `.env`를 만들고 운영 값을 입력합니다.
 
-Lolipop의 독自ドメイン 설정에서公開フォルダ를 아래처럼 지정합니다.
+`https://YOUR_DOMAIN/watch/`로 접속하는 배포라면 Lolipop 공개 폴더를 기존 사이트 루트로 두고 `web/watch/` 폴더를 그대로 사용합니다. 루트 `.htaccess`가 `/watch/` 요청을 `public/`으로 연결합니다.
+
+독自ドメイン 전체를 이 앱 전용으로 쓸 때만 Lolipop의公開フォルダ를 아래처럼 지정합니다.
 
 ```text
 watch/public
@@ -130,7 +135,7 @@ watch/public
 관리 페이지 URL:
 
 ```text
-https://YOUR_DOMAIN/
+https://YOUR_DOMAIN/watch/
 ```
 
 `public/`만 공개되게 해야 `.env`, `storage/`, `src/`, `vendor/`가 웹에서 직접 노출되지 않습니다.

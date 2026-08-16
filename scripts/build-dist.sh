@@ -26,6 +26,8 @@ for path in \
   src \
   config \
   templates \
+  .htaccess \
+  index.php \
   bootstrap.php \
   composer.json \
   .env.example \

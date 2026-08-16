@@ -1,6 +1,7 @@
 .git
 .env
 vendor
+dist
 storage/database.sqlite
 storage/*.sqlite
 storage/*.lock

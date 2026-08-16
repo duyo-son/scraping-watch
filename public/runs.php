@@ -17,7 +17,7 @@ ob_start();
 <tbody>
 <?php foreach ($rows as $row): ?>
 <tr>
-  <td><a href="/run.php?id=<?= Html::e($row['id']) ?>">#<?= Html::e($row['id']) ?></a></td>
+  <td><a href="<?= Html::e(Html::appUrl('/run.php?id=' . $row['id'])) ?>">#<?= Html::e($row['id']) ?></a></td>
   <td><?= Html::e($row['started_at']) ?></td><td><?= Html::e($row['finished_at']) ?></td>
   <td><?= Html::e($row['duration_ms']) ?> ms</td><td><?= Html::e($row['source_count']) ?></td>
   <td><?= Html::e($row['success_count']) ?></td><td><?= Html::e($row['failure_count']) ?></td>

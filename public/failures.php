@@ -20,7 +20,7 @@ ob_start();
   <td><?= Html::e($row['started_at']) ?></td><td><?= Html::e($row['source_name']) ?></td>
   <td><?= Html::link($row['source_url'], 'open') ?></td><td><?= Html::e($row['http_status'] ?? '-') ?></td>
   <td><?= Html::e($row['error_type']) ?></td><td class="error"><?= Html::e($row['error_message']) ?></td>
-  <td><?= Html::e($row['duration_ms']) ?> ms</td><td><a href="/run.php?id=<?= Html::e($row['scrape_run_id']) ?>">#<?= Html::e($row['scrape_run_id']) ?></a></td>
+  <td><?= Html::e($row['duration_ms']) ?> ms</td><td><a href="<?= Html::e(Html::appUrl('/run.php?id=' . $row['scrape_run_id'])) ?>">#<?= Html::e($row['scrape_run_id']) ?></a></td>
 </tr>
 <?php endforeach; ?>
 </tbody></table></div>

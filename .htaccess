@@ -1,0 +1,12 @@
+Options -Indexes
+DirectoryIndex index.php
+
+<FilesMatch "^(\.env|composer\.(json|lock)|README\.md|Dockerfile|docker-compose\.yml|phpunit\.xml|bootstrap\.php)$">
+    Require all denied
+</FilesMatch>
+
+RewriteEngine On
+
+RewriteRule ^(src|vendor|storage|config|tests|scripts|dist)(/|$) - [F,L]
+RewriteRule ^$ public/index.php [L]
+RewriteRule ^(assets\.css|index\.php|runs\.php|run\.php|watches\.php|failures\.php|scrape\.php|cron_scrape\.php)$ public/$1 [L,QSA]

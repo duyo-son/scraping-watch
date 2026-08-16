@@ -9,13 +9,15 @@ require dirname(__DIR__) . '/bootstrap.php';
 $token = Env::nullableString('SCRAPE_TOKEN');
 $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
 $host = $_SERVER['HTTP_HOST'] ?? Env::string('APP_HOST', '');
+$basePath = '/' . trim(Env::string('APP_BASE_PATH', ''), '/');
+$basePath = $basePath === '/' ? '' : $basePath;
 
 if ($host === '') {
     echo "APP_HOST or HTTP_HOST is required\n";
     exit(1);
 }
 
-$url = $scheme . '://' . $host . '/scrape.php';
+$url = $scheme . '://' . $host . $basePath . '/scrape.php';
 if ($token !== null) {
     $url .= '?token=' . rawurlencode($token);
 }
