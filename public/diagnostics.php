@@ -22,6 +22,8 @@ $logPath = $logDir . '/app.log';
 $tokenEnabled = Env::nullableString('SCRAPE_TOKEN') !== null;
 $tokenParam = $tokenEnabled ? '?token=SCRAPE_TOKEN값' : '';
 $forceParam = $tokenEnabled ? '?token=SCRAPE_TOKEN값&force=1' : '?force=1';
+$chunkParam = $tokenEnabled ? '?token=SCRAPE_TOKEN값&force=1&limit=3&offset=0' : '?force=1&limit=3&offset=0';
+$jackroadParam = $tokenEnabled ? '?token=SCRAPE_TOKEN값&force=1&source=Jackroad' : '?force=1&source=Jackroad';
 $staleMinutes = Env::int('SCRAPE_STALE_AFTER_MINUTES', 10);
 
 $logLines = [];
@@ -47,6 +49,8 @@ $checks = [
     ['SCRAPE_TOKEN', $tokenEnabled ? 'set' : 'empty'],
     ['SCRAPE_MIN_INTERVAL_MINUTES', (string) Env::int('SCRAPE_MIN_INTERVAL_MINUTES', 30)],
     ['SCRAPE_STALE_AFTER_MINUTES', (string) $staleMinutes],
+    ['SCRAPE_SOURCES_PER_REQUEST', (string) Env::int('SCRAPE_SOURCES_PER_REQUEST', 3)],
+    ['CRON_CHUNK_TIMEOUT', (string) Env::int('CRON_CHUNK_TIMEOUT', 180)],
 ];
 
 ob_start();
@@ -57,7 +61,9 @@ ob_start();
   <h3>실행 URL</h3>
   <p>수동 실행: <a href="<?= Html::e(Html::appUrl('/scrape.php' . $tokenParam)) ?>"><?= Html::e(Html::appUrl('/scrape.php' . $tokenParam)) ?></a></p>
   <p>강제 재실행: <a href="<?= Html::e(Html::appUrl('/scrape.php' . $forceParam)) ?>"><?= Html::e(Html::appUrl('/scrape.php' . $forceParam)) ?></a></p>
-  <p class="small">강제 재실행은 30분 제한을 무시하고, 멈춰 있던 RUNNING 실행을 먼저 정리합니다.</p>
+  <p>강제 chunk 실행: <a href="<?= Html::e(Html::appUrl('/scrape.php' . $chunkParam)) ?>"><?= Html::e(Html::appUrl('/scrape.php' . $chunkParam)) ?></a></p>
+  <p>Jackroad 단독 실행: <a href="<?= Html::e(Html::appUrl('/scrape.php' . $jackroadParam)) ?>"><?= Html::e(Html::appUrl('/scrape.php' . $jackroadParam)) ?></a></p>
+  <p class="small">강제 재실행은 30분 제한을 무시하고, 멈춰 있던 RUNNING 실행을 먼저 정리합니다. 기본 웹 실행은 공유호스팅 timeout을 피하려고 일부 사이트만 처리하고 next_url을 돌려줍니다.</p>
 </section>
 
 <section class="panel">

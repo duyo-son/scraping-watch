@@ -56,10 +56,16 @@ final class ScrapeRunner
         return $this->runs->recoverRunningRuns($minutes, 'Scrape run was left RUNNING and was recovered before the next execution.');
     }
 
-    public function run(string $triggerType = 'http'): array
+    public function run(string $triggerType = 'http', ?int $sourceLimit = null, int $sourceOffset = 0, ?string $sourceName = null): array
     {
         $started = microtime(true);
-        $enabledSources = $this->sources->enabledWithConfig($this->siteConfigs);
+        $allSources = $this->sources->enabledWithConfig($this->siteConfigs);
+        $matchingSources = $sourceName === null ? $allSources : array_values(array_filter(
+            $allSources,
+            fn (array $source): bool => strcasecmp((string) $source['name'], $sourceName) === 0
+        ));
+        $sourceOffset = max(0, $sourceOffset);
+        $enabledSources = array_slice($matchingSources, $sourceOffset, $sourceLimit);
         $runId = $this->runs->createRun(count($enabledSources), $triggerType);
         $finished = false;
         register_shutdown_function(function () use (&$finished, $runId): void {
@@ -138,6 +144,13 @@ final class ScrapeRunner
             'total_products' => $totalProducts,
             'new_products' => count($newProductIds),
             'duration_ms' => $duration,
+            'source_count' => count($enabledSources),
+            'total_matching_sources' => count($matchingSources),
+            'source_offset' => $sourceOffset,
+            'source_limit' => $sourceLimit,
+            'next_offset' => $sourceLimit === null || $sourceOffset + count($enabledSources) >= count($matchingSources)
+                ? null
+                : $sourceOffset + count($enabledSources),
         ];
     }
 

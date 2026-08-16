@@ -26,6 +26,18 @@ https://aeogae.com/watch/scrape.php
 https://aeogae.com/watch/scrape.php?force=1
 ```
 
+서버 timeout을 피해서 3개 사이트씩 강제 실행하는 URL:
+
+```text
+https://aeogae.com/watch/scrape.php?force=1&limit=3&offset=0
+```
+
+Jackroad만 단독으로 확인하는 URL:
+
+```text
+https://aeogae.com/watch/scrape.php?force=1&source=Jackroad
+```
+
 스크레이핑 원인 확인/진단 URL:
 
 ```text
@@ -120,11 +132,13 @@ DB_PATH=/home/users/X/lolipop.jp-ACCOUNT/web/watch/storage/database.sqlite
 SCRAPE_TOKEN=긴_랜덤_문자열
 SCRAPE_MIN_INTERVAL_MINUTES=30
 SCRAPE_STALE_AFTER_MINUTES=10
+SCRAPE_SOURCES_PER_REQUEST=3
 FIRST_RUN_NOTIFY=false
 SLACK_WEBHOOK_URL=
 HTTP_USER_AGENT=WatchInventoryMonitor/1.0
 HTTP_CONNECT_TIMEOUT=10
 HTTP_TIMEOUT=30
+CRON_CHUNK_TIMEOUT=180
 ```
 
 `DB_PATH`는 반드시 Lolipop의 실제 절대 경로로 바꿉니다. 사용자 전용 페이지의アカウント情報 또는 SSH에서 `pwd`로 확인합니다.
@@ -225,6 +239,20 @@ curl -fsS "https://YOUR_DOMAIN/watch/scrape.php?token=SCRAPE_TOKEN값"
 curl -fsS "https://YOUR_DOMAIN/watch/scrape.php?token=SCRAPE_TOKEN값&force=1"
 ```
 
+Lolipop 서버 timeout 회피용 chunk 실행:
+
+```bash
+curl -fsS "https://YOUR_DOMAIN/watch/scrape.php?token=SCRAPE_TOKEN값&force=1&limit=3&offset=0"
+```
+
+응답에 `next_url` 또는 `next_offset`이 있으면 다음 offset을 이어서 호출합니다. `public/cron_scrape.php`는 이 작업을 자동으로 반복합니다.
+
+문제 사이트 단독 실행:
+
+```bash
+curl -fsS "https://YOUR_DOMAIN/watch/scrape.php?token=SCRAPE_TOKEN값&force=1&source=Jackroad"
+```
+
 진단 페이지:
 
 ```text
@@ -249,7 +277,7 @@ Lolipop 사용자 전용 페이지에서 `cron設定`을 엽니다. 공식 문�
 
 이 프로젝트는 HTTP endpoint 방식이 기본이므로, cron에는 작은 PHP wrapper를 두는 방식을 권장합니다.
 
-`public/cron_scrape.php`가 포함되어 있습니다. `.env`의 `APP_HOST`와 `SCRAPE_TOKEN`을 읽어서 `/scrape.php`를 호출합니다.
+`public/cron_scrape.php`가 포함되어 있습니다. `.env`의 `APP_HOST`와 `SCRAPE_TOKEN`을 읽어서 `/scrape.php`를 호출합니다. Lolipop 같은 공유호스팅의 timeout을 피하려고 기본값은 3개 사이트씩 나눠 호출합니다.
 
 Lolipop cron 실행ファイルパス 예:
 
@@ -361,6 +389,7 @@ curl "http://localhost:8080/scrape.php?token=xxxxxxxxxxxxxxxx"
 
 ```env
 SCRAPE_MIN_INTERVAL_MINUTES=30
+SCRAPE_SOURCES_PER_REQUEST=3
 DEBUG_MODE=false
 ```
 

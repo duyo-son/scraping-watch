@@ -23,6 +23,10 @@ if ($token !== null && !hash_equals($token, (string) ($_GET['token'] ?? ''))) {
 }
 
 $force = (string) ($_GET['force'] ?? '') === '1';
+$sourceName = trim((string) ($_GET['source'] ?? ''));
+$sourceName = $sourceName === '' ? null : $sourceName;
+$sourceOffset = max(0, (int) ($_GET['offset'] ?? 0));
+$sourceLimit = max(1, (int) ($_GET['limit'] ?? Env::int('SCRAPE_SOURCES_PER_REQUEST', 3)));
 $lockPath = dirname(__DIR__) . '/storage/scrape.lock';
 $lock = fopen($lockPath, 'c');
 if ($lock === false || !flock($lock, LOCK_EX | LOCK_NB)) {
@@ -47,10 +51,14 @@ if ($reason !== null) {
     exit;
 }
 
-$result = $runner->run($force ? 'http-force' : 'http');
+$result = $runner->run($force ? 'http-force' : 'http', $sourceLimit, $sourceOffset, $sourceName);
 $result['recovered_stale_runs'] = $recovered;
 $result['run_url'] = Html::appUrl('/run.php?id=' . $result['run_id']);
 $result['failures_url'] = Html::appUrl('/failures.php');
 $result['diagnostics_url'] = Html::appUrl('/diagnostics.php');
+if ($result['next_offset'] !== null) {
+    $nextQuery = 'force=1&limit=' . $sourceLimit . '&offset=' . $result['next_offset'];
+    $result['next_url'] = Html::appUrl('/scrape.php?' . $nextQuery);
+}
 flock($lock, LOCK_UN);
 echo json_encode($result, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);

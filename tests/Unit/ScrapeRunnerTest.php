@@ -87,6 +87,35 @@ final class ScrapeRunnerTest extends TestCase
         self::assertSame(1, $third['new_products']);
     }
 
+    public function testRunCanProcessSourceChunk(): void
+    {
+        SequenceScraper::$queue = [['A']];
+        $runner = new ScrapeRunner(Connection::pdo(), [
+            [
+                'name' => 'FIRST',
+                'url' => 'https://example.test/first',
+                'category' => 'test',
+                'enabled' => true,
+                'scraper' => SequenceScraper::class,
+            ],
+            [
+                'name' => 'SECOND',
+                'url' => 'https://example.test/second',
+                'category' => 'test',
+                'enabled' => true,
+                'scraper' => SequenceScraper::class,
+            ],
+        ], new Logger(sys_get_temp_dir() . '/watch-test.log'));
+
+        $result = $runner->run('test', 1, 0);
+
+        self::assertSame(1, $result['source_count']);
+        self::assertSame(2, $result['total_matching_sources']);
+        self::assertSame(0, $result['source_offset']);
+        self::assertSame(1, $result['source_limit']);
+        self::assertSame(1, $result['next_offset']);
+    }
+
     public function testStaleRunningRunIsRecovered(): void
     {
         $runs = new RunRepository(Connection::pdo());
