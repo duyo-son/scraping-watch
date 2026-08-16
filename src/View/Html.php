@@ -21,6 +21,7 @@ final class Html
             '/runs.php' => '스크레이핑 실행 기록',
             '/failures.php' => '실패 기록',
             '/scrape.php' => '수동 실행',
+            '/diagnostics.php' => '진단',
         ];
         echo '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">';
         echo '<title>' . self::e($title) . '</title><link rel="stylesheet" href="' . self::e(self::appUrl('/assets.css')) . '"></head><body>';

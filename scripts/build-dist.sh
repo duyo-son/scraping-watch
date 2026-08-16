@@ -33,6 +33,7 @@ for path in \
   runs.php \
   run.php \
   failures.php \
+  diagnostics.php \
   scrape.php \
   cron_scrape.php \
   bootstrap.php \

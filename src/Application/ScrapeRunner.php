@@ -50,11 +50,40 @@ final class ScrapeRunner
         return null;
     }
 
+    public function recoverStaleRunningRuns(bool $force = false): int
+    {
+        $minutes = $force ? 0 : Env::int('SCRAPE_STALE_AFTER_MINUTES', 10);
+        return $this->runs->recoverRunningRuns($minutes, 'Scrape run was left RUNNING and was recovered before the next execution.');
+    }
+
     public function run(string $triggerType = 'http'): array
     {
         $started = microtime(true);
         $enabledSources = $this->sources->enabledWithConfig($this->siteConfigs);
         $runId = $this->runs->createRun(count($enabledSources), $triggerType);
+        $finished = false;
+        register_shutdown_function(function () use (&$finished, $runId): void {
+            if ($finished) {
+                return;
+            }
+
+            $error = error_get_last();
+            $type = $error === null ? 'UnexpectedShutdown' : 'FatalShutdown';
+            $message = 'Scrape stopped before finishRun was called.';
+            if ($error !== null) {
+                $message = $error['message'] . ' in ' . $error['file'] . ':' . $error['line'];
+            }
+
+            try {
+                if ($this->pdo->inTransaction()) {
+                    $this->pdo->rollBack();
+                }
+                $this->runs->markInterrupted($runId, $type, $message);
+                $this->logger->error('scrape interrupted', ['run_id' => $runId, 'error' => $message]);
+            } catch (Throwable $e) {
+                error_log('failed to mark interrupted scrape run ' . $runId . ': ' . $e->getMessage());
+            }
+        });
         $this->logger->info('scrape start', ['run_id' => $runId, 'source_count' => count($enabledSources)]);
 
         $success = 0;
@@ -95,6 +124,7 @@ final class ScrapeRunner
         $status = $failure === 0 ? 'SUCCESS' : ($success > 0 ? 'PARTIAL_SUCCESS' : 'FAILED');
         $duration = (int) round((microtime(true) - $started) * 1000);
         $this->runs->finishRun($runId, $status, $success, $failure, $totalProducts, count($newProductIds), $duration);
+        $finished = true;
 
         $newProducts = $this->products->productsByIds($newProductIds);
         (new SlackNotifier(new NotificationRepository($this->pdo), $this->logger))->notifyNewProducts($runId, $newProducts);

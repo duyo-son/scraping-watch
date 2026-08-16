@@ -10,6 +10,7 @@ use WatchScraper\Application\ScrapeRunner;
 use WatchScraper\Database\Connection;
 use WatchScraper\Http\HttpClient;
 use WatchScraper\Repository\ProductRepository;
+use WatchScraper\Repository\RunRepository;
 use WatchScraper\Scraper\Product;
 use WatchScraper\Scraper\ScrapeResult;
 use WatchScraper\Scraper\ScraperInterface;
@@ -84,6 +85,28 @@ final class ScrapeRunnerTest extends TestCase
         $third = $this->runner(SequenceScraper::class)->run('test');
 
         self::assertSame(1, $third['new_products']);
+    }
+
+    public function testStaleRunningRunIsRecovered(): void
+    {
+        $runs = new RunRepository(Connection::pdo());
+        Connection::pdo()->exec(
+            "INSERT INTO sources (name, url, category, enabled, created_at, updated_at)
+             VALUES ('STALE', 'https://example.test', 'test', 1, datetime('now'), datetime('now'))"
+        );
+        $runId = $runs->createRun(1, 'test');
+        $sourceRunId = $runs->createSourceRun($runId, 1);
+        Connection::pdo()->exec("UPDATE scrape_runs SET started_at = datetime('now', '-20 minutes') WHERE id = " . $runId);
+        Connection::pdo()->exec("UPDATE scrape_source_runs SET started_at = datetime('now', '-20 minutes') WHERE id = " . $sourceRunId);
+
+        $recovered = $runs->recoverRunningRuns(10, 'test recovery');
+        $run = $runs->run($runId);
+        $sourceRun = $runs->sourceRuns($runId)[0];
+
+        self::assertSame(1, $recovered);
+        self::assertSame('FAILED', $run['status']);
+        self::assertSame('FAILED', $sourceRun['status']);
+        self::assertSame('StaleRunningRun', $sourceRun['error_type']);
     }
 
     private function runner(string $scraperClass): ScrapeRunner

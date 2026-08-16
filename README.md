@@ -8,6 +8,30 @@
 http://localhost:8080/
 ```
 
+현재 운영 관리 페이지 URL:
+
+```text
+https://aeogae.com/watch/
+```
+
+현재 운영 스크레이핑 실행 URL:
+
+```text
+https://aeogae.com/watch/scrape.php
+```
+
+30분 제한을 무시하고 멈춘 RUNNING 실행까지 정리한 뒤 다시 실행하는 URL:
+
+```text
+https://aeogae.com/watch/scrape.php?force=1
+```
+
+스크레이핑 원인 확인/진단 URL:
+
+```text
+https://aeogae.com/watch/diagnostics.php
+```
+
 브라우저에서 `Bad Request`가 보이면 localhost에 남은 쿠키 영향일 수 있으므로 아래 URL도 사용할 수 있습니다.
 
 ```text
@@ -95,6 +119,7 @@ DEBUG_MODE=false
 DB_PATH=/home/users/X/lolipop.jp-ACCOUNT/web/watch/storage/database.sqlite
 SCRAPE_TOKEN=긴_랜덤_문자열
 SCRAPE_MIN_INTERVAL_MINUTES=30
+SCRAPE_STALE_AFTER_MINUTES=10
 FIRST_RUN_NOTIFY=false
 SLACK_WEBHOOK_URL=
 HTTP_USER_AGENT=WatchInventoryMonitor/1.0
@@ -124,6 +149,7 @@ dist/watch/
 ├─ runs.php       <- rewrite fallback
 ├─ run.php        <- rewrite fallback
 ├─ failures.php   <- rewrite fallback
+├─ diagnostics.php <- rewrite fallback
 ├─ scrape.php     <- rewrite fallback
 ├─ bootstrap.php
 ├─ composer.json
@@ -184,13 +210,25 @@ composer install --no-dev --optimize-autoloader
 브라우저:
 
 ```text
-https://YOUR_DOMAIN/
+https://YOUR_DOMAIN/watch/
 ```
 
 수동 scrape:
 
 ```bash
-curl -fsS "https://YOUR_DOMAIN/scrape.php?token=SCRAPE_TOKEN값"
+curl -fsS "https://YOUR_DOMAIN/watch/scrape.php?token=SCRAPE_TOKEN값"
+```
+
+30분 제한과 멈춘 RUNNING 실행을 무시하고 바로 재실행:
+
+```bash
+curl -fsS "https://YOUR_DOMAIN/watch/scrape.php?token=SCRAPE_TOKEN값&force=1"
+```
+
+진단 페이지:
+
+```text
+https://YOUR_DOMAIN/watch/diagnostics.php
 ```
 
 정상 예:
@@ -235,7 +273,7 @@ cron 실행 결과 메일은 처음에는 켜두고, 안정화 후 필요하면 
 관리 화면:
 
 ```text
-https://YOUR_DOMAIN/
+https://YOUR_DOMAIN/watch/
 ```
 
 확인할 곳:
@@ -243,6 +281,7 @@ https://YOUR_DOMAIN/
 - Dashboard의 마지막 실행 상태
 - `/runs.php`
 - `/failures.php`
+- `/diagnostics.php`
 - `storage/logs/app.log`
 - `storage/database.sqlite`
 
@@ -261,9 +300,20 @@ public/
 src/
 config/
 vendor/
+index.php
+assets.css
+watches.php
+runs.php
+run.php
+failures.php
+diagnostics.php
+scrape.php
+cron_scrape.php
 bootstrap.php
 composer.json
 composer.lock
+.htaccess
+.env.example
 ```
 
 업로드하지 않는 것:
@@ -337,7 +387,7 @@ FIRST_RUN_NOTIFY=false
 운영 timezone 기준은 `Asia/Tokyo`입니다.
 
 ```cron
-0 10,13,18,21 * * * curl -fsS --max-time 900 "https://example.com/scrape.php?token=YOUR_TOKEN" >/dev/null 2>&1
+0 10,13,18,21 * * * curl -fsS --max-time 900 "https://example.com/watch/scrape.php?token=YOUR_TOKEN" >/dev/null 2>&1
 ```
 
 Docker 내부 cron은 사용하지 않습니다.
@@ -349,6 +399,7 @@ Docker 내부 cron은 사용하지 않습니다.
 - `/runs.php` 전체 실행 기록
 - `/run.php?id=123` 실행 상세 및 해당 scrape snapshot
 - `/failures.php` 사이트별 실패 기록
+- `/diagnostics.php` PHP/DB/로그/최근 실행 진단
 - `/scrape.php` HTTP scrape 실행 endpoint
 
 ## SQLite 테이블
@@ -391,6 +442,7 @@ Docker 내부 cron은 사용하지 않습니다.
 
 - Dashboard의 사이트별 상태
 - `/failures.php`
+- `/diagnostics.php`
 - `storage/logs/app.log`
 
 민감정보인 `SCRAPE_TOKEN`, `SLACK_WEBHOOK_URL`은 로그에 출력하지 않습니다.

@@ -19,6 +19,24 @@ final class RunRepository
         return $row ?: null;
     }
 
+    public function recoverRunningRuns(int $olderThanMinutes, string $message): int
+    {
+        $threshold = date('Y-m-d H:i:s', time() - max(0, $olderThanMinutes) * 60);
+        $stmt = $this->pdo->prepare(
+            'SELECT id FROM scrape_runs
+             WHERE status = "RUNNING" AND started_at <= :threshold
+             ORDER BY started_at, id'
+        );
+        $stmt->execute(['threshold' => $threshold]);
+        $ids = array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
+
+        foreach ($ids as $id) {
+            $this->markInterrupted($id, 'StaleRunningRun', $message);
+        }
+
+        return count($ids);
+    }
+
     public function createRun(int $sourceCount, string $triggerType): int
     {
         $stmt = $this->pdo->prepare(
@@ -109,6 +127,60 @@ final class RunRepository
         ]);
     }
 
+    public function markInterrupted(int $runId, string $type, string $message): void
+    {
+        $now = date('Y-m-d H:i:s');
+        $this->pdo->beginTransaction();
+        try {
+            $stmt = $this->pdo->prepare(
+                'UPDATE scrape_source_runs
+                 SET finished_at = :finished_at,
+                     status = "FAILED",
+                     duration_ms = CAST((strftime("%s", :finished_at) - strftime("%s", started_at)) * 1000 AS INTEGER),
+                     error_type = :error_type,
+                     error_message = :error_message
+                 WHERE scrape_run_id = :run_id AND status = "RUNNING"'
+            );
+            $stmt->execute([
+                'finished_at' => $now,
+                'error_type' => $type,
+                'error_message' => substr($message, 0, 1000),
+                'run_id' => $runId,
+            ]);
+
+            $counts = $this->sourceRunCounts($runId);
+            $success = (int) ($counts['success_count'] ?? 0);
+            $failure = (int) ($counts['failure_count'] ?? 0);
+            $status = $success > 0 && $failure > 0 ? 'PARTIAL_SUCCESS' : ($success > 0 ? 'SUCCESS' : 'FAILED');
+
+            $stmt = $this->pdo->prepare(
+                'UPDATE scrape_runs
+                 SET finished_at = :finished_at,
+                     status = :status,
+                     success_count = :success_count,
+                     failure_count = :failure_count,
+                     total_products = :total_products,
+                     new_products = :new_products,
+                     duration_ms = CAST((strftime("%s", :finished_at) - strftime("%s", started_at)) * 1000 AS INTEGER)
+                 WHERE id = :id AND status = "RUNNING"'
+            );
+            $stmt->execute([
+                'finished_at' => $now,
+                'status' => $status,
+                'success_count' => $success,
+                'failure_count' => $failure,
+                'total_products' => (int) ($counts['total_products'] ?? 0),
+                'new_products' => (int) ($counts['new_products'] ?? 0),
+                'id' => $runId,
+            ]);
+
+            $this->pdo->commit();
+        } catch (\Throwable $e) {
+            $this->pdo->rollBack();
+            throw $e;
+        }
+    }
+
     public function previousSuccessfulSourceRunId(int $sourceId, int $currentSourceRunId): ?int
     {
         $stmt = $this->pdo->prepare(
@@ -146,5 +218,34 @@ final class RunRepository
         );
         $stmt->execute(['run_id' => $runId]);
         return $stmt->fetchAll();
+    }
+
+    public function recentSourceRuns(int $limit = 20): array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT ssr.*, sr.status run_status, s.name source_name
+             FROM scrape_source_runs ssr
+             JOIN scrape_runs sr ON sr.id = ssr.scrape_run_id
+             JOIN sources s ON s.id = ssr.source_id
+             ORDER BY ssr.started_at DESC, ssr.id DESC LIMIT :limit'
+        );
+        $stmt->bindValue('limit', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    private function sourceRunCounts(int $runId): array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT
+                SUM(CASE WHEN status = "SUCCESS" THEN 1 ELSE 0 END) success_count,
+                SUM(CASE WHEN status = "FAILED" THEN 1 ELSE 0 END) failure_count,
+                COALESCE(SUM(product_count), 0) total_products,
+                COALESCE(SUM(new_product_count), 0) new_products
+             FROM scrape_source_runs
+             WHERE scrape_run_id = :run_id'
+        );
+        $stmt->execute(['run_id' => $runId]);
+        return $stmt->fetch() ?: [];
     }
 }
