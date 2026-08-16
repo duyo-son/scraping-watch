@@ -1,0 +1,10 @@
+/.env
+/vendor/
+/dist/
+/storage/database.sqlite
+/storage/*.sqlite
+/storage/*.lock
+/storage/logs/*.log
+/storage/debug/*
+!.gitkeep
+.DS_Store

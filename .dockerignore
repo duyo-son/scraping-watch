@@ -1,0 +1,9 @@
+.git
+.env
+vendor
+storage/database.sqlite
+storage/*.sqlite
+storage/*.lock
+storage/logs/*.log
+storage/debug/*
+.DS_Store

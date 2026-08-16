@@ -1,0 +1,31 @@
+{
+  "name": "aeogae/scraping-watch",
+  "description": "Vacheron Constantin inventory monitor for Japanese watch shops.",
+  "type": "project",
+  "require": {
+    "php": ">=8.1",
+    "ext-pdo": "*",
+    "ext-pdo_sqlite": "*",
+    "guzzlehttp/guzzle": "^7.9",
+    "symfony/dom-crawler": "^6.4",
+    "symfony/css-selector": "^6.4",
+    "vlucas/phpdotenv": "^5.6"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^10.5"
+  },
+  "autoload": {
+    "psr-4": {
+      "WatchScraper\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "WatchScraper\\Tests\\": "tests/"
+    }
+  },
+  "scripts": {
+    "test": "phpunit --testsuite unit",
+    "test:live": "LIVE_TESTS=1 phpunit --testsuite integration"
+  }
+}
